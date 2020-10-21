@@ -12,7 +12,7 @@ part 'authentication_state.dart';
 class AuthenticationBloc
     extends Bloc<AuthenticationEvent, AuthenticationState> {
   AuthenticationRepository repository;
-
+  User currentUser;
   AuthenticationBloc(this.repository) : super(AuthenticationInitial());
 
   @override
@@ -22,11 +22,12 @@ class AuthenticationBloc
     yield AuthenticationLoading();
     try {
       if (event is Authenticate) {
-        User _user = await repository.getUser(event.deviceId);
+        User _user = await repository.getUser();
+        currentUser = _user;
         yield AuthenticationSuccess(_user);
       }
     } catch (e) {
-      yield AuthenticationError(e);
+      yield AuthenticationError(e.toString());
     }
   }
 }

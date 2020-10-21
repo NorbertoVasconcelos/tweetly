@@ -4,7 +4,7 @@ part of 'authentication_bloc.dart';
 abstract class AuthenticationEvent {}
 
 class Authenticate extends AuthenticationEvent {
-  final int deviceId;
+  final String deviceId;
 
   Authenticate({this.deviceId});
 }

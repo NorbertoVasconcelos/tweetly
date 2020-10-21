@@ -7,14 +7,23 @@ class GetTweets extends FeedEvent {}
 
 class CreateTweet extends FeedEvent {
   final String text;
+  final User user;
 
-  CreateTweet(this.text);
+  CreateTweet(this.text, this.user);
 }
 
-class UpdateTweet extends FeedEvent {
+class LikeTweet extends FeedEvent {
   final Tweet tweet;
+  final User user;
 
-  UpdateTweet(this.tweet);
+  LikeTweet(this.tweet, this.user);
+}
+
+class UnLikeTweet extends FeedEvent {
+  final Tweet tweet;
+  final User user;
+
+  UnLikeTweet(this.tweet, this.user);
 }
 
 class SelectFilter extends FeedEvent {

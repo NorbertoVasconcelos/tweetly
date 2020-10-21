@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:tweetly/authentication/presentation/bloc/authentication_bloc.dart';
 import 'package:tweetly/feed/presentation/bloc/feed_bloc.dart';
 
 class CreateTweetPage extends StatefulWidget {
@@ -58,8 +59,10 @@ class _CreateTweetPageState extends State<CreateTweetPage> {
                   color: Colors.blue,
                   onPressed: _textEditingController.text.isNotEmpty
                       ? () {
-                          BlocProvider.of<FeedBloc>(context)
-                              .add(CreateTweet(_textEditingController.text));
+                          BlocProvider.of<FeedBloc>(context).add(CreateTweet(
+                              _textEditingController.text,
+                              BlocProvider.of<AuthenticationBloc>(context)
+                                  .currentUser));
                           Navigator.pop(context);
                         }
                       : null,

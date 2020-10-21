@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:tweetly/authentication/presentation/bloc/authentication_bloc.dart';
 import 'package:tweetly/feed/models/tweet.dart';
 import 'package:tweetly/feed/presentation/bloc/feed_bloc.dart';
 import 'package:tweetly/feed/presentation/pages/create_tweet_page.dart';
@@ -15,6 +16,7 @@ class _FeedPageState extends State<FeedPage> {
   @override
   void initState() {
     super.initState();
+    BlocProvider.of<AuthenticationBloc>(context).add(Authenticate());
     BlocProvider.of<FeedBloc>(context).add(GetTweets());
   }
 
@@ -98,23 +100,41 @@ class _FeedPageState extends State<FeedPage> {
                 itemBuilder: (context, index) {
                   Tweet _tweet = state.tweets[index];
                   return ListTile(
-                      title: Text(_tweet.text),
-                      subtitle: Text(_tweet.creationDate.toString()),
+                      title: Text(
+                        _tweet.text,
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      subtitle: Row(
+                        children: [
+                          Expanded(child: Text(_tweet.user)),
+                          Flexible(child: Text(_tweet.creationDate.toString()))
+                        ],
+                      ),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text("${_tweet.numLikes}"),
+                          Text("${_tweet.likes.length}"),
                           IconButton(
                               icon: Icon(
                                 Icons.thumb_up,
-                                color: _tweet.isLikedByUser
+                                color: isLikedByUser(_tweet)
                                     ? Colors.blue
                                     : Color(0XFFE0E0E0),
                               ),
                               onPressed: () {
-                                _tweet.isLikedByUser = !_tweet.isLikedByUser;
-                                BlocProvider.of<FeedBloc>(context)
-                                    .add(UpdateTweet(_tweet));
+                                BlocProvider.of<FeedBloc>(context).add(
+                                    !isLikedByUser(_tweet)
+                                        ? LikeTweet(
+                                            _tweet,
+                                            BlocProvider.of<AuthenticationBloc>(
+                                                    context)
+                                                .currentUser)
+                                        : UnLikeTweet(
+                                            _tweet,
+                                            BlocProvider.of<AuthenticationBloc>(
+                                                    context)
+                                                .currentUser));
                               }),
                         ],
                       ));
@@ -131,5 +151,15 @@ class _FeedPageState extends State<FeedPage> {
         },
       ),
     );
+  }
+
+  bool isLikedByUser(Tweet tweet) {
+    bool result = false;
+    tweet.likes.forEach((element) {
+      if (element.contains(
+          BlocProvider.of<AuthenticationBloc>(context).currentUser.id))
+        result = true;
+    });
+    return result;
   }
 }

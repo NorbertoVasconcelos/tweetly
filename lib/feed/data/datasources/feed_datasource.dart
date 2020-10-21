@@ -1,11 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:tweetly/authentication/models/user.dart';
 import 'package:tweetly/feed/models/tweet.dart';
 import 'package:tweetly/feed/presentation/bloc/feed_bloc.dart';
 
 abstract class FeedDataSource {
   Future<List<Tweet>> getTweets(Filter filter);
-  createTweet(String text);
-  setTweetState({Tweet tweet});
+  createTweet(String text, User user);
+  likeTweet({Tweet tweet, User user});
+  unlikeTweet({Tweet tweet, User user});
 }
 
 class FeedFireStoreDataSource implements FeedDataSource {
@@ -20,29 +22,39 @@ class FeedFireStoreDataSource implements FeedDataSource {
         filterString = 'numLikes';
         break;
       case Filter.recommended:
-        filterString = 'whatever';
+        filterString = 'creationDate';
         break;
       default:
     }
-    QuerySnapshot snapshot = await FirebaseFirestore.instance
-        .collection('tweets')
-        .orderBy(filterString, descending: true)
-        .get();
-    return snapshot.docs
-        .map<Tweet>((document) => Tweet.fromDocumentSnapshot(document))
-        .toList();
+    try {
+      QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection('tweets')
+          .orderBy(filterString, descending: true)
+          .get();
+      List<Tweet> tweets = snapshot.docs
+          .map<Tweet>((document) => Tweet.fromDocumentSnapshot(document))
+          .toList();
+      if (filter == Filter.recommended)
+        tweets.sort((a, b) => a.text.length.compareTo(b.text.length));
+      return tweets;
+    } catch (e) {
+      print(e.toString());
+      throw Error();
+    }
   }
 
   @override
-  setTweetState({Tweet tweet}) async {
+  likeTweet({Tweet tweet, User user}) async {
     try {
-      await FirebaseFirestore.instance
-          .collection('tweets')
-          .doc(tweet.id)
-          .update({
-        "isLikedByUser": tweet.isLikedByUser,
-        "numLikes":
-            tweet.isLikedByUser ? tweet.numLikes + 1 : tweet.numLikes - 1
+      DocumentReference likesRef = FirebaseFirestore.instance
+          .collection('likes')
+          .doc('${user.id}:${tweet.id}');
+      await likesRef.set({'state': true});
+
+      DocumentReference tweetRef =
+          FirebaseFirestore.instance.collection('tweets').doc(tweet.id);
+      await tweetRef.update({
+        'likes': FieldValue.arrayUnion([likesRef])
       });
     } catch (e) {
       throw e;
@@ -50,14 +62,35 @@ class FeedFireStoreDataSource implements FeedDataSource {
   }
 
   @override
-  createTweet(String text) {
+  unlikeTweet({Tweet tweet, User user}) async {
+    try {
+      DocumentReference likesRef = FirebaseFirestore.instance
+          .collection('likes')
+          .doc('${user.id}:${tweet.id}');
+      await likesRef.delete();
+
+      DocumentReference tweetRef =
+          FirebaseFirestore.instance.collection('tweets').doc(tweet.id);
+      await tweetRef.update({
+        'likes': FieldValue.arrayRemove([likesRef])
+      });
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  @override
+  createTweet(String text, User user) {
+    DocumentReference userRef =
+        FirebaseFirestore.instance.collection('users').doc(user.id);
     FirebaseFirestore.instance
         .collection('tweets')
         .add({
           "text": text,
           "numLikes": 0,
-          "isLikedByUser": false,
-          "creationDate": DateTime.now()
+          "creationDate": DateTime.now(),
+          "likes": [],
+          "user": userRef
         })
         .then((value) => null)
         .catchError(() => print("Error creating a tweet!"));
@@ -70,37 +103,40 @@ class FeedMockDataSource implements FeedDataSource {
     return Future.delayed(Duration(seconds: 1), () {
       return [
         Tweet(
-            id: "5",
-            text:
-                "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec ut maximus justo, in luctus sapien. Vestibulum laoreet sem quam, porta blandit turpis hendrerit a. Donec ac lorem vitae nisi tempus suscipit sit amet congue arcu. Curabitur congue ultrices nulla at egestas. Nulla vitae dui eget tortor ullamcorper aliquet sit amet at massa.",
-            creationDate: DateTime.now(),
-            isLikedByUser: true,
-            numLikes: 12),
+          id: "5",
+          text:
+              "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec ut maximus justo, in luctus sapien. Vestibulum laoreet sem quam, porta blandit turpis hendrerit a. Donec ac lorem vitae nisi tempus suscipit sit amet congue arcu. Curabitur congue ultrices nulla at egestas. Nulla vitae dui eget tortor ullamcorper aliquet sit amet at massa.",
+          creationDate: DateTime.now(),
+        ),
         Tweet(
-            id: "6",
-            text: "Tweet numero 6",
-            creationDate: DateTime.now(),
-            isLikedByUser: false,
-            numLikes: 19),
+          id: "6",
+          text: "Tweet numero 6",
+          creationDate: DateTime.now(),
+        ),
         Tweet(
-            id: "7",
-            text: "Tweet numero 7",
-            creationDate: DateTime.now(),
-            isLikedByUser: false,
-            numLikes: 2),
+          id: "7",
+          text: "Tweet numero 7",
+          creationDate: DateTime.now(),
+        ),
       ];
     });
   }
 
   @override
-  createTweet(String text) {
+  createTweet(String text, User user) {
     // TODO: implement createTweet
     throw UnimplementedError();
   }
 
   @override
-  setTweetState({Tweet tweet}) {
-    // TODO: implement setTweetState
+  likeTweet({Tweet tweet, User user}) {
+    // TODO: implement likeTweet
+    throw UnimplementedError();
+  }
+
+  @override
+  unlikeTweet({Tweet tweet, User user}) {
+    // TODO: implement unlikeTweet
     throw UnimplementedError();
   }
 }

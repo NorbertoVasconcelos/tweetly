@@ -6,7 +6,7 @@ class AuthenticationRepository {
 
   AuthenticationRepository(this._dataSource);
 
-  Future<User> getUser(int deviceId) {
-    return _dataSource.getUser(deviceId);
+  Future<User> getUser() {
+    return _dataSource.authenticate();
   }
 }
