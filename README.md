@@ -22,6 +22,7 @@ Use Flutter and Firebase.
 - Due to the time constraint and not a lot of focus required for the UI, the sorting buttons do not show which is currently selected (they do however work 👀).
 - I opted to not use streams in this project, so the UI won't immediately reflect changes done on other devices (Tapping a sort button will refresh though).
 - I didn't use Cloud FireStore Functions, as a billing method was required, but I imagine it would have made my life easier on the frontend development and would facilitate rule enforcement.
+- I only tested on iOS.
 
 ## Getting Started
 

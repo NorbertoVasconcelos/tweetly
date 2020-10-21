@@ -11,8 +11,8 @@ class AuthenticationFireStoreDataSource implements AuthenticationDataSource {
   @override
   Future<User> authenticate() async {
     Faker _faker = Faker();
-    String deviceId = await DeviceId.getID;
     try {
+      String deviceId = await DeviceId.getID;
       DocumentSnapshot snapshot = await FirebaseFirestore.instance
           .collection('users')
           .doc(deviceId)

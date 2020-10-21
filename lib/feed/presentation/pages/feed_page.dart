@@ -157,8 +157,8 @@ class _FeedPageState extends State<FeedPage> {
     bool result = false;
     tweet.likes.forEach((element) {
       if (element.contains(
-          BlocProvider.of<AuthenticationBloc>(context).currentUser.id))
-        result = true;
+          BlocProvider.of<AuthenticationBloc>(context).currentUser?.id ??
+              "non-existent")) result = true;
     });
     return result;
   }
